@@ -1,1 +1,48 @@
+name: Build APK
 
+on:
+  workflow_dispatch:   # manual "Run workflow" button
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Create local.properties with API keys
+        run: |
+          cat <<EOF > local.properties
+          GEMINI_API_KEYS=${{ secrets.GEMINI_API_KEYS }}
+          TAVILY_API=${{ secrets.TAVILY_API }}
+          MEM0_API=${{ secrets.MEM0_API }}
+          PICOVOICE_ACCESS_KEY=${{ secrets.PICOVOICE_ACCESS_KEY }}
+          GOOGLE_TTS_API_KEY=${{ secrets.GOOGLE_TTS_API_KEY }}
+          GCLOUD_GATEWAY_PICOVOICE_KEY=${{ secrets.GCLOUD_GATEWAY_PICOVOICE_KEY }}
+          GCLOUD_GATEWAY_URL=${{ secrets.GCLOUD_GATEWAY_URL }}
+          GCLOUD_PROXY_URL=${{ secrets.GCLOUD_PROXY_URL }}
+          GCLOUD_PROXY_URL_KEY=${{ secrets.GCLOUD_PROXY_URL_KEY }}
+          REVENUE_CAT_PUBLIC_URL=${{ secrets.REVENUE_CAT_PUBLIC_URL }}
+          REVENUECAT_API_KEY=${{ secrets.REVENUECAT_API_KEY }}
+          EOF
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: panda-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
